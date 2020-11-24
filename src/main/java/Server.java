@@ -29,7 +29,7 @@ public class Server {
 			Server.index = Server.class.getResourceAsStream("index.html").readAllBytes();
 			Server.notFound = Server.class.getResourceAsStream("notfound.html").readAllBytes();
 		} catch (IOException ioe) {
-			System.err.println("Could not read index.html: " + ioe);
+			System.err.println("Could not read a required resource: " + ioe);
 		}
 
 		try {
