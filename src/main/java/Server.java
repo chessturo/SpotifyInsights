@@ -119,7 +119,6 @@ public class Server {
 	 *                    directly to the client as the {@code Content-Type} header.
 	 * @param content     - The content of the response (i.e., the response body).
 	 * @param statusCode  - The HTTP status code used in the response.
-	 * @throws IOException
 	 */
 	private static void send(HttpExchange t, String contentType, byte[] content, int statusCode) {
 		try {
@@ -141,7 +140,6 @@ public class Server {
 	 * @param contentType - The MIME type of the {@code content}/response body. Sent
 	 *                    directly to the client as the {@code Content-Type} header.
 	 * @param content     - The content of the response (i.e., the response body).
-	 * @throws IOException
 	 */
 	private static void send(HttpExchange t, String contentType, byte[] content) {
 		Server.send(t, contentType, content, HttpURLConnection.HTTP_OK);
