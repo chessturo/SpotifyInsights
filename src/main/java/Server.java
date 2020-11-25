@@ -123,8 +123,12 @@ public class Server {
 	private static void send(HttpExchange t, String contentType, byte[] content, int statusCode) {
 		try {
 			t.getResponseHeaders().set("Content-Type", contentType);
-			t.sendResponseHeaders(statusCode, content.length);
-			t.getResponseBody().write(content);
+			if (content.length != 0) {
+				t.sendResponseHeaders(statusCode, content.length);
+				t.getResponseBody().write(content);
+			} else {
+				t.sendResponseHeaders(statusCode, -1);
+			}
 			t.getResponseBody().close();
 		} catch (IOException ioe) {
 			System.err.println("Error sending response: " + ioe);
