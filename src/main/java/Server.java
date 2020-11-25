@@ -26,10 +26,26 @@ public class Server {
 	 */
 	private static byte[] notFound;
 
+	/**
+	 * The ID of this Spotify application as registered through their developer
+	 * portal. Initialized in the main method to be the contents of the
+	 * {@code spotify_client_id} resource.
+	 */
+	private static String spotifyClientId;
+
+	/**
+	 * The secret used by this app to access the Spotify API. Initialized in the
+	 * main method to be the contents of the {@code spotify_client_secret} resource.
+	 */
+	private static String spotifyClientSecret;
+
 	public static void main(String[] args) {
 		try {
 			Server.index = Server.class.getResourceAsStream("index.html").readAllBytes();
 			Server.notFound = Server.class.getResourceAsStream("notfound.html").readAllBytes();
+			Server.spotifyClientId = new String(Server.class.getResourceAsStream("spotify_client_id").readAllBytes());
+			Server.spotifyClientSecret = new String(
+					Server.class.getResourceAsStream("spotify_client_secret").readAllBytes());
 		} catch (IOException ioe) {
 			System.err.println("Could not read a required resource: " + ioe);
 			System.exit(1);
@@ -45,6 +61,12 @@ public class Server {
 
 		Server.addPath(server, "/", List.of("/", "/index.html"), (HttpExchange t) -> {
 			Server.send(t, "text/html", index);
+		});
+		Server.addPath(server, "/login", (HttpExchange t) -> {
+			
+		});
+		Server.addPath(server, "/callback", (HttpExchange t) -> {
+			
 		});
 		server.start();
 	}
@@ -147,5 +169,24 @@ public class Server {
 	 */
 	private static void send(HttpExchange t, String contentType, byte[] content) {
 		Server.send(t, contentType, content, HttpURLConnection.HTTP_OK);
+	}
+
+	/**
+	 * Redirects the client at the other end of {@code t} to the URL in
+	 * {@code Location} using a 302 status code.
+	 * 
+	 * @param t
+	 * @param location
+	 */
+	private static void redirect(HttpExchange t, String location) {
+		try {
+			t.getResponseHeaders().set("Location", location);
+			// For whatever reason, HttpURLConnection uses the HTTP/1.0 name of "Moved
+			// Temporarily" rather than HTTP/1.1 name of "Found".
+			t.sendResponseHeaders(HttpURLConnection.HTTP_MOVED_TEMP, -1);
+			t.getResponseBody().close();
+		} catch (IOException ioe) {
+			System.err.println("Error redirecting: " + ioe);
+		}
 	}
 }
