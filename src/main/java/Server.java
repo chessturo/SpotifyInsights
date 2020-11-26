@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
-import java.util.List;
+import java.nio.charset.*;
+import java.util.*;
 import java.util.function.*;
 
 import com.sun.net.httpserver.*;
@@ -39,6 +40,21 @@ public class Server {
 	 */
 	private static String spotifyClientSecret;
 
+	/**
+	 * The callback URL for the Spotify OAuth flow.
+	 */
+	private static final String SPOTIFY_OAUTH_CALLBACK = "http://localhost/callback";
+
+	/**
+	 * The scopes that the application needs to have access to on the Spotify API.
+	 */
+	private static final String SPOTIFY_SCOPE = "user-read-email";
+
+	/**
+	 * The name of the state cookie given to the user-agent to help prevent CSRF.
+	 */
+	private static final String STATE_COOKIE_NAME = "spotify_oauth_state";
+
 	public static void main(String[] args) {
 		try {
 			Server.index = Server.class.getResourceAsStream("index.html").readAllBytes();
@@ -62,11 +78,52 @@ public class Server {
 		Server.addPath(server, "/", List.of("/", "/index.html"), (HttpExchange t) -> {
 			Server.send(t, "text/html", index);
 		});
+
 		Server.addPath(server, "/login", (HttpExchange t) -> {
+			// Random hex value from 0x000000 -> 0xFFFFFF
+			int stateNumber = (int) (Math.random() * (0xFFFFFF + 1));
+			String state = String.format("%06x", stateNumber);
 			
+			Server.addCookie(t, STATE_COOKIE_NAME, state);
+			Server.redirect(t,
+					"https://accounts.spotify.com/authorize?" + "response_type=code" + "&client_id="
+							+ URLEncoder.encode(spotifyClientId, StandardCharsets.UTF_8) + "&scope="
+							+ URLEncoder.encode(SPOTIFY_SCOPE, StandardCharsets.UTF_8) + "&redirect_uri="
+							+ URLEncoder.encode(SPOTIFY_OAUTH_CALLBACK, StandardCharsets.UTF_8) + "&state="
+							+ URLEncoder.encode(state, StandardCharsets.UTF_8));
 		});
 		Server.addPath(server, "/callback", (HttpExchange t) -> {
+			String cookieState = null, queryState = null;
+
+			List<String> rawCookies = t.getRequestHeaders().get("Cookie");
+			for (String cookieKvp : rawCookies) {
+				if (cookieKvp.startsWith(STATE_COOKIE_NAME + "=")) {
+					String[] stateCookie = cookieKvp.split("=", 2);
+					
+					// Handle if the header looks like
+					// Cookie: spotify_oauth_state=000000; Secure; HttpOnly
+					int endOfValue = stateCookie[1].indexOf(';');
+					endOfValue = endOfValue == -1 ? stateCookie[1].length() : endOfValue;
+					cookieState = stateCookie[1].substring(0, endOfValue);
+				}
+			}
 			
+			String query = t.getRequestURI().getQuery();
+			Map<String, String> queryPairs = new HashMap<>();
+			String[] keyValuePairs = query.split("&");
+			for (String queryKvp : keyValuePairs) {
+				String[] keyAndValue = queryKvp.split("=", 2);
+				String key = keyAndValue[0];
+				String value = keyAndValue[1];
+				queryPairs.put(key, value);
+			}
+			queryState = queryPairs.get("state");
+
+			if (cookieState != null && queryState != null && cookieState.equals(queryState)) {
+				Server.send(t, "text/plain", "OAuth success.");
+			} else {
+				Server.send(t, "text/plain", "State mismatch.", HttpURLConnection.HTTP_FORBIDDEN);
+			}
 		});
 		server.start();
 	}
@@ -158,6 +215,35 @@ public class Server {
 	}
 
 	/**
+	 * Using the given {@code HttpExchange}, sends a response with the given
+	 * {@code statusCode}, {@code contentType} (as the {@code Content-Type} header),
+	 * and {@code content} (as the response body).
+	 * 
+	 * @param t           - The {@code HttpExchange} used to send the response.
+	 * @param contentType - The MIME type of the {@code content}/response body. Sent
+	 *                    directly to the client as the {@code Content-Type} header.
+	 * @param content     - The content of the response (i.e., the response body).
+	 * @param statusCode  - The HTTP status code used in the response.
+	 */
+	private static void send(HttpExchange t, String contentType, String content, int statusCode) {
+		Server.send(t,  contentType, content.getBytes(), statusCode);
+	}
+	
+	/**
+	 * Using the given {@code HttpExchange}, sends a response with
+	 * {@code contentType} (as the {@code Content-Type} header) and {@code content}
+	 * (as the response body). A status code of 200 is implied.
+	 * 
+	 * @param t           - The {@code HttpExchange} used to send the response.
+	 * @param contentType - The MIME type of the {@code content}/response body. Sent
+	 *                    directly to the client as the {@code Content-Type} header.
+	 * @param content     - The content of the response (i.e., the response body).
+	 */
+	private static void send(HttpExchange t, String contentType, String content) {
+		Server.send(t, contentType, content.getBytes());
+	}
+	
+	/**
 	 * Using the given {@code HttpExchange}, sends a response with
 	 * {@code contentType} (as the {@code Content-Type} header) and {@code content}
 	 * (as the response body). A status code of 200 is implied.
@@ -188,5 +274,20 @@ public class Server {
 		} catch (IOException ioe) {
 			System.err.println("Error redirecting: " + ioe);
 		}
+	}
+
+	/**
+	 * Adds a cookie with the given name ({@code key}) and {@code value}).
+	 * 
+	 * @param t     - The {@code HttpExchange} that the cookie should be added to.
+	 * @param key   - The name of the cookie (must be a valid cookie name).
+	 * @param value - The value of the cookie (must be a valid cookie value).
+	 * 
+	 * @see <a href=
+	 *      "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie">Set-Cookie
+	 *      on MDN</a>
+	 */
+	private static void addCookie(HttpExchange t, String key, String value) {
+		t.getResponseHeaders().add("Set-Cookie", key + "=" + value);
 	}
 }
