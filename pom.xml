@@ -4,4 +4,11 @@
   <artifactId>SpotifyInsights</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>SpotifyInsights</name>
+  <dependencies>
+  	<dependency>
+  		<groupId>org.json</groupId>
+    	<artifactId>json</artifactId>
+    	<version>LATEST</version>
+  	</dependency>
+  </dependencies>
 </project>
