@@ -98,28 +98,32 @@ public class Server {
 			String cookieState = null, queryState = null;
 
 			List<String> rawCookies = t.getRequestHeaders().get("Cookie");
-			for (String cookieKvp : rawCookies) {
-				if (cookieKvp.startsWith(STATE_COOKIE_NAME + "=")) {
-					String[] stateCookie = cookieKvp.split("=", 2);
-
-					// Handle if the header looks like
-					// Cookie: spotify_oauth_state=000000; Secure; HttpOnly
-					int endOfValue = stateCookie[1].indexOf(';');
-					endOfValue = endOfValue == -1 ? stateCookie[1].length() : endOfValue;
-					cookieState = stateCookie[1].substring(0, endOfValue);
+			if (rawCookies != null) {				
+				for (String cookieKvp : rawCookies) {
+					if (cookieKvp.startsWith(STATE_COOKIE_NAME + "=")) {
+						String[] stateCookie = cookieKvp.split("=", 2);
+						
+						// Handle if the header looks like
+						// Cookie: spotify_oauth_state=000000; Secure; HttpOnly
+						int endOfValue = stateCookie[1].indexOf(';');
+						endOfValue = endOfValue == -1 ? stateCookie[1].length() : endOfValue;
+						cookieState = stateCookie[1].substring(0, endOfValue);
+					}
 				}
 			}
 
 			String query = t.getRequestURI().getQuery();
 			Map<String, String> queryPairs = new HashMap<>();
-			String[] keyValuePairs = query.split("&");
-			for (String queryKvp : keyValuePairs) {
-				String[] keyAndValue = queryKvp.split("=", 2);
-				String key = keyAndValue[0];
-				String value = keyAndValue[1];
-				queryPairs.put(key, value);
+			if (query != null) {				
+				String[] keyValuePairs = query.split("&");
+				for (String queryKvp : keyValuePairs) {
+					String[] keyAndValue = queryKvp.split("=", 2);
+					String key = keyAndValue[0];
+					String value = keyAndValue[1];
+					queryPairs.put(key, value);
+				}
+				queryState = queryPairs.get("state");
 			}
-			queryState = queryPairs.get("state");
 
 			if (cookieState != null && queryState != null && cookieState.equals(queryState)) {
 				if (queryPairs.containsKey("error")) {
