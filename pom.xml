@@ -7,8 +7,8 @@
   <dependencies>
   	<dependency>
   		<groupId>org.json</groupId>
-    	<artifactId>json</artifactId>
-    	<version>LATEST</version>
+  		<artifactId>json</artifactId>
+  		<version>LATEST</version>
   	</dependency>
   </dependencies>
 </project>
