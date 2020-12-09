@@ -709,10 +709,6 @@ public class Server {
 		 */
 		private String refreshToken;
 		/**
-		 * The Unix time stamp that this session will expire at.
-		 */
-		private long sessionExpiresAt;
-		/**
 		 * A URL object that points to the Spotify acount service where access tokens
 		 * can be generated/refreshed.
 		 */
@@ -787,7 +783,7 @@ public class Server {
 			this.currentToken = response.getString("access_token");
 			// Subtracts one just to make sure there aren't any edge cases where a token
 			// might *just barely* expire while still being shown as valid here.
-			this.sessionExpiresAt = response.getInt("expires_in") + Instant.now().getEpochSecond() - 1;
+			this.tokenExpiresAt = response.getInt("expires_in") + Instant.now().getEpochSecond() - 1;
 			this.refreshToken = response.getString("refresh_token");
 		}
 	}
