@@ -1,2 +1,4 @@
 /target/
 /src/main/resources/spotify_client_secret
+/src/main/resources/keystore.jks
+/src/main/resources/key_store_password
