@@ -44,6 +44,11 @@ public class Server {
 	 * {@code notfound.html} resource.
 	 */
 	private static byte[] notFound;
+	/**
+	 * Initialized in the main method to be the contents of the {@code si.png}
+	 * resource.
+	 */
+	private static byte[] siLogo;
 
 	/**
 	 * The ID of this Spotify application as registered through their developer
@@ -63,7 +68,7 @@ public class Server {
 	/**
 	 * The scopes that the application needs to have access to on the Spotify API.
 	 */
-	private static final String SPOTIFY_SCOPE = "user-read-email user-library-read";
+	private static final String SPOTIFY_SCOPE = "user-read-email user-library-read user-read-playback-state";
 	/**
 	 * The name of the state cookie given to the user-agent to help prevent CSRF.
 	 */
@@ -112,6 +117,7 @@ public class Server {
 		try {
 			Server.index = Server.class.getResourceAsStream("index.html").readAllBytes();
 			Server.notFound = Server.class.getResourceAsStream("notfound.html").readAllBytes();
+			Server.siLogo = Server.class.getResourceAsStream("si.png").readAllBytes();
 			Server.spotifyClientId = new String(Server.class.getResourceAsStream("spotify_client_id").readAllBytes());
 			Server.spotifyClientSecret = new String(
 					Server.class.getResourceAsStream("spotify_client_secret").readAllBytes());
@@ -170,6 +176,9 @@ public class Server {
 
 		Server.addPath(server, "/", List.of("/", "/index.html"), (HttpExchange t) -> {
 			Server.send(t, "text/html", index);
+		});
+		Server.addPath(server, "/si.png", (HttpExchange t) -> {
+			Server.send(t, "image/png", siLogo);
 		});
 
 		Server.addPath(server, "/login", (HttpExchange t) -> {
