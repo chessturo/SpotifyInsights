@@ -6,6 +6,7 @@ import java.time.*;
 import java.time.format.*;
 import java.time.temporal.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.function.*;
 
 import javax.net.ssl.*;
@@ -58,7 +59,7 @@ public class Server {
 	/**
 	 * The callback URL for the Spotify OAuth flow.
 	 */
-	private static final String SPOTIFY_OAUTH_CALLBACK = "http://localhost/callback";
+	private static final String SPOTIFY_OAUTH_CALLBACK = "https://localhost/callback";
 	/**
 	 * The scopes that the application needs to have access to on the Spotify API.
 	 */
@@ -86,7 +87,7 @@ public class Server {
 	/**
 	 * The map of session IDs to sessions.
 	 */
-	private static final Map<String, Session> sessions = new HashMap<>();
+	private static final ConcurrentMap<String, Session> sessions = new ConcurrentHashMap<>();
 	/**
 	 * The secure RNG used to generate session IDs.
 	 */
@@ -234,7 +235,7 @@ public class Server {
 		Server.addPath(server, "/results", (HttpExchange t) -> {
 			String rawCookies = t.getRequestHeaders().getFirst("Cookie");
 			Map<String, String> cookies = rawCookies == null ? new HashMap<>() : parseCookieHeader(rawCookies);
-			
+
 			if (!cookies.containsKey(SESSION_COOKIE_NAME) || !sessions.containsKey(cookies.get(SESSION_COOKIE_NAME))) {
 				Server.redirect(t, "/login");
 			} else {
@@ -257,6 +258,16 @@ public class Server {
 			Server.clearCookie(t, SESSION_COOKIE_NAME, true, true);
 			Server.redirect(t, "/");
 		});
+		ScheduledExecutorService sessionUpdateScheduler = Executors.newScheduledThreadPool(1);
+		long currentEpochTime = Instant.now().getEpochSecond();
+		sessionUpdateScheduler.scheduleAtFixedRate(() -> {
+			Set<String> keys = Server.sessions.keySet();
+			for (String sessionId : keys) {
+				if (Server.sessions.get(sessionId).sessionExpiresAt > currentEpochTime) {
+					Server.sessions.remove(sessionId);
+				}
+			}
+		}, 0L, 1L, TimeUnit.MINUTES);
 		server.start();
 	}
 
@@ -709,6 +720,11 @@ public class Server {
 		 */
 		private String refreshToken;
 		/**
+		 * The Unix time stamp that this session expires at (i.e., when it should be
+		 * removed from {@link Server#sessions}.
+		 */
+		private long sessionExpiresAt;
+		/**
 		 * A URL object that points to the Spotify acount service where access tokens
 		 * can be generated/refreshed.
 		 */
@@ -748,6 +764,7 @@ public class Server {
 			// might *just barely* expire while still being shown as valid here.
 			this.tokenExpiresAt = response.getInt("expires_in") + Instant.now().getEpochSecond() - 1;
 			this.refreshToken = response.getString("refresh_token");
+			this.sessionExpiresAt = Server.SESSION_LENGTH_SECONDS + Instant.now().getEpochSecond() - 1;
 		}
 
 		/**
