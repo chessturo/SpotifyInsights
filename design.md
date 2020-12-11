@@ -47,7 +47,7 @@ Stores our client id to prove identity to Spotify once the access token is recie
 
 ### Track.java
 
-Stores the information of a Spotify track.
+Stores the information of a Spotify track
 
 This object handles the parsing of a track's information from the API and stores it into coder-friendly terms (takes the json and keeps items such as titles and artists as Strings or List<String>s).
 
@@ -94,7 +94,7 @@ This was, in some sense, correct. This server is able to do everything that we n
 
 We chose to use the org.json library as we've worked with it before.
 
-We created the Track.java file to provide temporary storage and allow for a lightweight framework to interact with the API. Creating a robust index of all of the songs and entire library of a user would be resource-intensive so we decided to store data on a track-by-track basis as we need the data. The JSON parser is used by the Track class to generate `Track` objects based on the JSON returned by the Spotify API.
+We created the Track.java file to provide temporary storage and allow for a lightweight framework to interact with the API. Creating a robust index of all of the songs and entire library of a user would be resource-intensive so we decided to store data on a track-by-track basis as we need the data. The JSON parser is implemented within the Track class and has the Server class as a client. 
 
 
 ### How we chose what to give insight about
