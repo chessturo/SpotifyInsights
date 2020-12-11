@@ -2,7 +2,7 @@
 
 SpotifyInsights allows users to view their current top 20 songs.
 
-CSE 143 final project by Mitchell Levy, Jaden Wang, and Lianne Kniest (2020).
+CSE 143 final project by Mitchell Levy, Jaden Wang, and Lianne Kniest (2020). Final version of this repo at the due date: https://github.com/levymitchell0/SpotifyInsights/tree/9af3aca1daecf91584777fc7191925b5ea0a1c44/. We've continued to make minor bug fixes since then.
 
 ## Description
 
