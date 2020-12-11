@@ -192,6 +192,7 @@ public class Server {
 			Server.redirect(t, "https://accounts.spotify.com/authorize?"
 							+ Server.generateURLEscapedKVPs(
 									new KVP<>("response_type", "code"),
+									new KVP<>("show_dialog", "true"),
 									new KVP<>("client_id", spotifyClientId), 
 									new KVP<>("scope", SPOTIFY_SCOPE),
 									new KVP<>("redirect_uri", SPOTIFY_OAUTH_CALLBACK), 
@@ -220,6 +221,7 @@ public class Server {
 						Server.send(t, "text/plain", "Error: " + queryPairs.get("error"));
 					} else {
 						try {
+							System.out.println("Trying to create a session from: " + new String(t.getRequestBody().readAllBytes()) + "\n" + "\t" + queryPairs.get("code").get(0));
 							Session current = new Session(queryPairs.get("code").get(0));
 							byte[] sessionIdBytes = new byte[SESSION_ID_LENGTH_BYTES];
 							secureRandom.nextBytes(sessionIdBytes);
@@ -249,7 +251,6 @@ public class Server {
 				Server.redirect(t, "/login");
 			} else {
 				Session session = sessions.get(cookies.get(SESSION_COOKIE_NAME));
-				String email = null;
 				try {
 					session.softRefresh();
 					URL spotifyApi = new URL("https://api.spotify.com/v1/me/top/tracks");
@@ -282,7 +283,7 @@ public class Server {
 		sessionUpdateScheduler.scheduleAtFixedRate(() -> {
 			Set<String> keys = Server.sessions.keySet();
 			for (String sessionId : keys) {
-				if (Server.sessions.get(sessionId).sessionExpiresAt > currentEpochTime) {
+				if (Server.sessions.get(sessionId).sessionExpiresAt < currentEpochTime) {
 					Server.sessions.remove(sessionId);
 				}
 			}
@@ -674,10 +675,11 @@ public class Server {
 		if (authorization != null) {
 			accountServiceConnection.setRequestProperty("Authorization", authorization);
 		}
+		System.out.println(accountServiceConnection.getRequestMethod());
 		try (OutputStream req = accountServiceConnection.getOutputStream()) {
 			req.write(requestBody.getBytes());
 		}
-
+		Map<String, List<String>> temp = accountServiceConnection.getHeaderFields();
 		String response;
 		try (InputStream res = accountServiceConnection.getInputStream()) {
 			response = (new String(res.readAllBytes()));
@@ -775,7 +777,9 @@ public class Server {
 					new KVP<>("redirect_uri", SPOTIFY_OAUTH_CALLBACK),
 					new KVP<>("client_id", spotifyClientId),
 					new KVP<>("client_secret", spotifyClientSecret));
+			System.out.println("req body: " + requestBody);
 			String responseRaw = Server.makePostRequest(SPOTIFY_ACCOUNT_SERVICE, requestBody);
+			System.out.println("res body: " + responseRaw);
 			//@formatter:on
 			JSONObject response = new JSONObject(responseRaw);
 			this.currentToken = response.getString("access_token");
