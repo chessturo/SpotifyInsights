@@ -16,7 +16,7 @@ See a quick overview of our project and some discussion on it ![here](LOCAL FILE
 
 ## How to Access
 
-Visit [SpotifyInsights](LINK). Login to Spotify and allow SpotifyInsights access.
+Visit [SpotifyInsights](https://spotifyinsights.app). Login to Spotify and allow SpotifyInsights access.
 
 ## Contributing
 
