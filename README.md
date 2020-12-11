@@ -21,7 +21,7 @@ See a quick overview of our project and some discussion on it
 
 We discuss our overall aims and our development process with some highlights on what we worked on most.
 
-## How to Access/Install
+# How to Access/Install
 
 ## Web Access
 
