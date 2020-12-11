@@ -68,7 +68,7 @@ public class Server {
 	/**
 	 * The scopes that the application needs to have access to on the Spotify API.
 	 */
-	private static final String SPOTIFY_SCOPE = "user-read-email user-library-read user-read-playback-state";
+	private static final String SPOTIFY_SCOPE = "user-read-email user-top-read";
 	/**
 	 * The name of the state cookie given to the user-agent to help prevent CSRF.
 	 */
@@ -252,11 +252,21 @@ public class Server {
 				String email = null;
 				try {
 					session.softRefresh();
-					URL spotifyApi = new URL("https://api.spotify.com/v1/me");
-					String response = Server.makeGetRequest(spotifyApi, "application/json",
+					URL spotifyApi = new URL("https://api.spotify.com/v1/me/top/tracks");
+					String responseRaw = Server.makeGetRequest(spotifyApi, "application/json",
 							"Bearer " + session.currentToken);
-					email = new JSONObject(response).getString("email");
-					Server.send(t, "text/plain", "OAuth success. Email: " + email);
+					JSONArray response = new JSONObject(responseRaw).getJSONArray("items");
+					List<Track> topTracks = Track.fromJsonArray(response.toString());
+					
+					StringBuilder output = new StringBuilder("Your top tracks are:\n");
+					for (Track tr : topTracks) {
+						output.append(tr.getArtists().get(0));
+						output.append(" - ");
+						output.append(tr.getTitle());
+						output.append("\n");
+					}
+					
+					Server.send(t, "text/plain", output.toString());
 				} catch (IOException ioe) {
 					System.err.println("Error accessing the Spotify api: " + ioe);
 					Server.send(t, "text/plain", "Server error.", HttpURLConnection.HTTP_INTERNAL_ERROR);
